@@ -1,0 +1,31 @@
+# Arduino build output
+/build/
+/applet/
+*.hex
+*.bin
+*.elf
+*.map
+
+# Arduino IDE
+*.userprefs
+*.sln
+*.vcxproj
+
+# PlatformIO
+.pio/
+platformio.ini
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Claude Code session state
+.claude/
+
+# Backup files
+*.bak
+*.orig
