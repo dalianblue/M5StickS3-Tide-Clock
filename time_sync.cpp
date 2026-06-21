@@ -404,18 +404,25 @@ static bool syncNTP(uint32_t timeoutMs = 10000) {
 void initTimeSync() {
     s_state = SyncState::BOOTING;
     Serial.println("\n[TimeSync] === 时间同步初始化 ===");
-    Serial.flush();  // 确保 USB-CDC 输出
+    Serial.flush();
 
     // 1. 优先尝试已保存凭证
     s_state = SyncState::WIFI_CONNECTING;
     if (connectWithSavedCredentials(WIFI_CONNECT_TIMEOUT_MS)) {
-        // Wi-Fi 已连，NTP 同步
         if (syncNTP()) {
             s_state = SyncState::SYNCED;
+#if POWER_WIFI_OFF_AFTER_SYNC
+            Serial.println("[Power] NTP 同步完成，关闭 Wi-Fi 省电");
+            WiFi.disconnect(true, true);
+            WiFi.mode(WIFI_OFF);
+#endif
             return;
         }
-        // NTP 失败，但 Wi-Fi 是连上的
         s_state = SyncState::RTC_ONLY;
+#if POWER_WIFI_OFF_AFTER_SYNC
+        WiFi.disconnect(true, true);
+        WiFi.mode(WIFI_OFF);
+#endif
         return;
     }
 
@@ -434,32 +441,56 @@ void initTimeSync() {
     } else {
         s_state = SyncState::RTC_ONLY;
     }
+#if POWER_WIFI_OFF_AFTER_SYNC
+    Serial.println("[Power] 关闭 Wi-Fi 省电");
+    WiFi.disconnect(true, true);
+    WiFi.mode(WIFI_OFF);
+#endif
 }
 
 void updateTimeSync() {
     uint32_t now = millis();
 
-    if (now - s_lastWifiCheck > WIFI_RECONNECT_INTERVAL_MS) {
-        s_lastWifiCheck = now;
-        if (WiFi.status() != WL_CONNECTED &&
-            s_state != SyncState::AP_PORTAL_WAIT) {
-            Serial.println("[TimeSync] Wi-Fi 断线，尝试重连");
-            WiFi.reconnect();
-        }
+    bool needResync = s_resyncRequested ||
+                      (now - s_lastResyncAttempt > NTP_RESYNC_INTERVAL_MS);
+    if (!needResync) return;
+
+    s_resyncRequested = false;
+    s_lastResyncAttempt = now;
+
+    // 重新打开 Wi-Fi 进行同步
+    Serial.println("[Power] 重新打开 Wi-Fi 进行 NTP 同步");
+    String ssid, pass;
+    if (!loadCredentials(ssid, pass)) {
+        Serial.println("[Power] 无保存凭证，跳过");
+        return;
     }
 
-    bool needResync = s_resyncRequested ||
-                      (isWifiConnected() &&
-                       (now - s_lastResyncAttempt > NTP_RESYNC_INTERVAL_MS));
-    if (needResync) {
-        s_resyncRequested = false;
-        s_lastResyncAttempt = now;
-        if (isWifiConnected()) {
-            if (syncNTP()) {
-                s_state = SyncState::SYNCED;
-            }
-        }
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid.c_str(), pass.c_str());
+
+    // 等待连接
+    uint32_t connStart = millis();
+    while (WiFi.status() != WL_CONNECTED &&
+           millis() - connStart < WIFI_CONNECT_TIMEOUT_MS) {
+        delay(500);
     }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        if (syncNTP()) {
+            s_state = SyncState::SYNCED;
+            Serial.println("[Power] NTP 重同步成功");
+        }
+    } else {
+        Serial.println("[Power] Wi-Fi 连接失败，继续用 RTC");
+    }
+
+#if POWER_WIFI_OFF_AFTER_SYNC
+    // 同步完成后关闭 Wi-Fi
+    WiFi.disconnect(true, true);
+    WiFi.mode(WIFI_OFF);
+    Serial.println("[Power] Wi-Fi 已关闭");
+#endif
 }
 
 SyncState getSyncState() { return s_state; }

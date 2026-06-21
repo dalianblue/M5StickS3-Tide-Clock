@@ -38,6 +38,14 @@
 #define SCREEN_AUTO_RETURN_MS  5000      // 5 秒无操作回到屏 1
 #define SCREEN_TRANSITION_MS   200       // 屏幕切换过渡（暂留作扩展）
 
+// ---------- 省电优化 ----------
+#define POWER_CPU_FREQ_MHZ     80       // CPU 频率（80MHz 足够，省电）
+#define POWER_WIFI_OFF_AFTER_SYNC  1    // NTP 同步后关闭 Wi-Fi（1=开启省电）
+#define POWER_SCREEN_DIM_MS    30000    // 30s 无操作降低亮度
+#define POWER_SCREEN_OFF_MS    60000    // 60s 无操作息屏
+#define POWER_SCREEN_DIM_LEVEL 20       // 降低亮度级别（0-255）
+#define POWER_LOOP_DELAY_MS    100      // loop 延迟（10Hz，省电）
+
 // ---------- 中文字体（可选，启用后屏 3 显示中文） ----------
 // 步骤：
 //   1. 用 Adafruit fontconvert 从 TTF 生成 .h 头文件（详见 README）

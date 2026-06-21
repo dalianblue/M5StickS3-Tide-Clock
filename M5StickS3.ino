@@ -13,10 +13,14 @@
 
 // ---------- 状态 ----------
 static int  s_currentScreen = SCREEN_CLOCK;
-static uint32_t s_lastBtnPress = 0;        // 上次按键时间（用于自动返回屏 1）
+static uint32_t s_lastBtnPress = 0;
 static uint32_t s_btnAPressStart = 0;
 static bool     s_btnALongFired = false;
 static uint32_t s_lastUITick = 0;
+
+// 屏幕超时状态（省电）
+static bool s_screenDimmed = false;
+static bool s_screenOff = false;
 
 // ---------- 亮度档位（BtnB 长按循环） ----------
 static const uint8_t BRIGHTNESS[] = {32, 128, 255};
@@ -35,6 +39,24 @@ static void cycleBrightness() {
 
 static void handleButtons() {
     M5.update();
+
+    // 屏幕关闭时，按键仅唤醒（不切屏）
+    if (s_screenOff) {
+        M5.Display.setBrightness(BRIGHTNESS[s_brightnessIdx]);
+        s_screenOff = false;
+        s_screenDimmed = false;
+        s_lastBtnPress = millis();
+        forceRedraw();
+        renderScreen(s_currentScreen);
+        return;
+    }
+
+    // 屏幕降亮时，恢复亮度
+    if (s_screenDimmed) {
+        M5.Display.setBrightness(BRIGHTNESS[s_brightnessIdx]);
+        s_screenDimmed = false;
+    }
+
     s_lastBtnPress = millis();
 
     // ---- BtnA ----（切屏 + 长按 NTP 重同步）
@@ -155,25 +177,44 @@ void setup() {
 
     s_currentScreen = SCREEN_CLOCK;
     renderScreen(s_currentScreen);
+
+    // NTP 同步完成后降低 CPU 频率省电
+    setCpuFrequencyMhz(POWER_CPU_FREQ_MHZ);
+    Serial.printf("[Power] CPU 降至 %d MHz\n", POWER_CPU_FREQ_MHZ);
 }
 
 void loop() {
+    uint32_t idle = millis() - s_lastBtnPress;
+
+    // 屏幕超时管理
+    if (idle > POWER_SCREEN_OFF_MS && !s_screenOff) {
+        M5.Display.setBrightness(0);
+        s_screenOff = true;
+        Serial.println("[Power] 屏幕关闭");
+    } else if (idle > POWER_SCREEN_DIM_MS && !s_screenDimmed && !s_screenOff) {
+        M5.Display.setBrightness(POWER_SCREEN_DIM_LEVEL);
+        s_screenDimmed = true;
+    }
+
     handleButtons();
     updateTimeSync();
 
-    // 自动返回屏 1（5 秒无操作）
-    if (s_currentScreen != SCREEN_CLOCK &&
-        (millis() - s_lastBtnPress) > SCREEN_AUTO_RETURN_MS) {
-        s_currentScreen = SCREEN_CLOCK;
-        renderScreen(s_currentScreen);
+    // 息屏时跳过 UI 刷新
+    if (!s_screenOff) {
+        // 自动返回屏 1
+        if (s_currentScreen != SCREEN_CLOCK &&
+            (millis() - s_lastBtnPress) > SCREEN_AUTO_RETURN_MS) {
+            s_currentScreen = SCREEN_CLOCK;
+            renderScreen(s_currentScreen);
+        }
+
+        // 刷新屏 1（降亮时也刷新，息屏时不刷新）
+        if (s_currentScreen == SCREEN_CLOCK &&
+            (millis() - s_lastUITick) > POWER_LOOP_DELAY_MS) {
+            s_lastUITick = millis();
+            uiLoopTick();
+        }
     }
 
-    // 每 100ms 刷新屏 1 时钟（屏 2/3 不需要）
-    if (s_currentScreen == SCREEN_CLOCK &&
-        (millis() - s_lastUITick) > 100) {
-        s_lastUITick = millis();
-        uiLoopTick();
-    }
-
-    delay(10);
+    delay(POWER_LOOP_DELAY_MS);
 }
