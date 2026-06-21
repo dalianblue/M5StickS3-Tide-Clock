@@ -26,7 +26,7 @@
 #define NVS_NAMESPACE "tide_clock"
 
 // ---------- 位置（铜州岛 = 杭州富阳桐州岛） ----------
-#define SITE_NAME     "桐州岛"
+#define SITE_NAME     "桐洲岛"
 #define SITE_LATITUDE 30.01
 #define SITE_LONGITUDE 119.98
 
@@ -37,6 +37,13 @@
 // ---------- UI ----------
 #define SCREEN_AUTO_RETURN_MS  5000      // 5 秒无操作回到屏 1
 #define SCREEN_TRANSITION_MS   200       // 屏幕切换过渡（暂留作扩展）
+
+// ---------- 中文字体（可选，启用后屏 3 显示中文） ----------
+// 步骤：
+//   1. 用 Adafruit fontconvert 从 TTF 生成 .h 头文件（详见 README）
+//   2. 复制为 cnfont.h（字体名 cnfont_subset16pt8b）
+//   3. 下面这行已启用
+#define USE_CHINESE_FONT
 
 // ---------- 潮汐计算（阶段 2 使用） ----------
 // 6 分潮简化调和分析（M2/S2/N2/K1/O1/P1）

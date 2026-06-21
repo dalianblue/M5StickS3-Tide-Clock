@@ -1,19 +1,19 @@
 # M5StickS3 潮汐 + 黄历固件
 
-为 M5StickS3（ESP32-S3）开发的自定义固件：显示铜州岛（杭州富阳桐州岛）潮汐、当日黄历，通过按键切换屏幕。
+为 M5StickS3（ESP32-S3）开发的自定义固件：显示杭州富阳桐州岛潮汐、当日黄历，通过按键切换屏幕。
 
 ## Plan（实施方案）
 
 ### Context（背景）
 
-用户手里有一台 M5StickS3（ESP32-S3，1.14" 240×135 屏幕，BtnA/BtnB 两按键），希望开发一个自定义固件，烧录后实现：
+利用 M5StickS3（ESP32-S3，1.14" 240×135 屏幕，BtnA/BtnB 两按键），开发一个自定义固件，烧录后实现：
 
 1. 启动时通过 Wi-Fi NTP 同步当前时间（GMT+8）
-2. 根据当前时间，预测铜州岛（即浙江杭州富阳桐州岛，30.01°N, 119.98°E）的水位
+2. 根据当前时间，预测桐洲岛（即浙江杭州富阳桐州岛，30.01°N, 119.98°E）的水位
 3. 显示当日黄历（农历、干支、宜忌）和 4 个涨落潮时刻
 4. 信息量较大，通过屏幕下方的蓝色按键（BtnB, GPIO12）切换屏幕显示
 
-用户此前用 Python 写过潮汐计算项目（`https://gitee.com/feathercraft/calculate-tides`），使用盐官校正法 + 调和分析模型，精度 ±8 分钟。该算法可移植到 ESP32-S3（浮点运算 <1ms，内存占用 ~5KB）。
+利用 Python 潮汐计算项目（`https://gitee.com/feathercraft/calculate-tides`），使用盐官校正法 + 调和分析模型，精度 ±8 分钟。该算法可移植到 ESP32-S3（浮点运算 <1ms，内存占用 ~5KB）。
 
 ---
 
@@ -55,7 +55,7 @@ M5StickS3/
 
 ```
 ┌──────────────────────────────────┐
-│ 今日潮汐  铜州岛 30.01N 119.98E   │
+│ 今日潮汐  岛 30.01N 119.98E   │
 │                                    │
 │  ▲ 高潮  03:12   +2.15m           │
 │  ▼ 低潮  09:28   -0.83m           │
@@ -136,7 +136,7 @@ h(t) = z0 + Σᵢ Hᵢ × cos(σᵢ × t - φᵢ),  i ∈ {M2,S2,N2,K1,O1,P1}
 **数据表（`data_tables.h`, PROGMEM, ~156 字节）**：
 
 - 6 分潮角速度 σ（标准天文常数）
-- 铜州岛调和常数（H 振幅、φ 相位）— 从 `tide_harmonic_constants.json` 提取
+- 桐洲岛调和常数（H 振幅、φ 相位）— 从 `tide_harmonic_constants.json` 提取
 - 盐官农历高潮表（农历 1-30 日对应分钟数，作为后备方案）
 
 **数据来源**：直接读 `https://gitee.com/feathercraft/calculate-tides` 仓库里的 `tide_harmonic_constants.json`，取前 6 个分潮的 amplitude 和 phase 字段，写成 C 数组。
@@ -200,7 +200,7 @@ LunarInfo getLunarInfo(int year, int month, int day);
 2. **135 像素高度排版极限**：横屏只能放 3-4 行。对策：屏 1 用 26pt 大字时钟 + 8pt 信息栏；用 Sprite 双缓冲避免闪烁；选 M5GFX 内置小点阵字体。
 3. **Wi-Fi 阻塞 loop**：对策：NTP 重同步放 FreeRTOS task 到 Core0。
 4. **Bill-Gray/lunar 体积**：完整库可能 >100KB Flash。对策：只提取 `date.cpp` 农历转换函数，裁剪到 <15KB。
-5. **铜州岛调和常数精度**：内河潮汐受径流影响，纯天文潮预报汛期误差大。对策：状态栏标注"仅供参考"；后续可加水位实测校准。
+5. **桐洲岛调和常数精度**：内河潮汐受径流影响，纯天文潮预报汛期误差大。对策：状态栏标注"仅供参考"；后续可加水位实测校准。
 
 ---
 
@@ -221,7 +221,97 @@ LunarInfo getLunarInfo(int year, int month, int day);
 
 - **Wi-Fi 凭证**：硬编码到 `config.h`（最简单，需重新编译才能改）vs SmartConfig 手机配置（复杂但灵活）
 - **宜忌详细度**：完整宜忌（每项平均 30 条）vs 精简版（前 5 条最常用，如"嫁娶、出行、安葬、动土、开市"）
-- **铜州岛地名**：研究中确认是杭州富阳"桐州岛"，请确认这是同一个地方
+- **桐洲岛地名**：研究中确认是杭州富阳"桐州岛"，请确认这是同一个地方
+
+# 中文字体安装（屏 3 黄历显示中文需要）
+
+M5GFX 默认字体不含 CJK，屏 3 的黄历、打分、农历等中文需要单独加载字体。
+
+**方案**：用 Adafruit fontconvert 工具生成 .h 头文件（C 数组），#include 到代码中。不需要烧录 LittleFS。
+
+## 步骤
+
+### 1. 准备 TTF 字体（任选一个开源字体）
+
+推荐（古韵风格适合黄历场景）：
+
+- **霞鹜文楷**（手写古风）：https://github.com/lxgw/LxgwWenKai
+- **Noto Sans SC**（思源黑体）：https://github.com/notofonts/noto-cjk
+- **Source Han Sans**（思源宋体）：https://github.com/adobe-fonts/source-han-sans
+
+下载 TTF/OTF 文件到本地（如 `LXGWWenKai-Regular.ttf`）。
+
+### 2. 安装 Adafruit fontconvert 工具
+
+```bash
+git clone https://github.com/adafruit/Adafruit-GFX-Library.git
+cd Adafruit-GFX-Library/fontconvert
+make
+```
+
+依赖：`gcc`、`freetype-dev`（macOS：`brew install freetype`）
+
+### 3. 生成字体头文件
+
+把 TTF 文件**重命名为 `cnfont.ttf`**（这样输出文件名和字体名都是 cnfont）：
+
+```bash
+cp /path/to/LXGWWenKai-Regular.ttf ./cnfont.ttf
+./fontconvert cnfont.ttf 16 0x20 0xFFFF
+```
+
+参数说明：
+- `16`：字号（pt），135×240 竖屏推荐 16（紧凑）或 20（清晰）
+- `0x20`：起始 Unicode（空格）
+- `0xFFFF`：结束 Unicode（覆盖 ASCII + CJK 统一汉字 + 部分）
+
+输出：`cnfont16pt7b.h`（约 100-500KB，包含 CJK 字符点阵）
+
+### 4. 替换 sketch 中的 cnfont.h
+
+```bash
+cp cnfont16pt7b.h /path/to/M5StickS3/cnfont.h
+```
+
+替换项目里的 placeholder 文件。
+
+### 5. 启用中文字体
+
+编辑 `config.h`，取消注释：
+
+```c
+#define USE_CHINESE_FONT
+```
+
+### 6. 编译烧录
+
+Arduino IDE 编译烧录。代码会自动 #include cnfont.h 并用 `cnfont16pt7b` 字体显示中文。
+
+## 验证
+
+固件启动时串口应显示：
+```
+[UI] Chinese font ENABLED
+```
+
+切到屏 3（短按 BtnA）应看到完整中文：农历日期、干支、生肖、值神、宜/忌、打分等级。
+
+如果未启用（USE_CHINESE_FONT 未定义），屏 3 会显示英文提示：
+```
+Chinese font disabled
+To enable:
+1. Generate cnfont.h
+2. #define USE_CHINESE_FONT
+```
+
+## 字号调整
+
+如果想用其他字号（如 20pt），需要：
+1. 重新运行 fontconvert，参数改为 `20`：`./fontconvert cnfont.ttf 20 0x20 0xFFFF`
+2. 替换 cnfont.h（注意字体名变成 `cnfont20pt7b`）
+3. 修改 ui_render.cpp 里的 `cnfont16pt7b` 为 `cnfont20pt7b`（搜索 `dsp.setFont(&cnfont` 全部替换）
+
+
 
 # 黄历打分系统
 

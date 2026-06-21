@@ -506,13 +506,13 @@ void forceNTPResync() {
 
 const char* syncStateString(SyncState s) {
     switch (s) {
-        case SyncState::BOOTING:          return "启动中";
-        case SyncState::AP_PORTAL_WAIT:   return "请配WiFi";
-        case SyncState::WIFI_CONNECTING:  return "连接中";
-        case SyncState::WIFI_FAILED:      return "WiFi失败";
-        case SyncState::NTP_SYNCING:      return "NTP同步";
-        case SyncState::SYNCED:           return "NTP已同步";
-        case SyncState::RTC_ONLY:         return "RTC模式";
+        case SyncState::BOOTING:          return "Boot";
+        case SyncState::AP_PORTAL_WAIT:   return "Setup";
+        case SyncState::WIFI_CONNECTING:  return "Conn";
+        case SyncState::WIFI_FAILED:      return "FAIL";
+        case SyncState::NTP_SYNCING:      return "NTP";
+        case SyncState::SYNCED:           return "NTP OK";
+        case SyncState::RTC_ONLY:         return "RTC";
     }
-    return "未知";
+    return "?";
 }

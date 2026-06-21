@@ -201,6 +201,22 @@ const char* levelName(ScoreLevel level) {
     return "?";
 }
 
+int getNormalizedScore(const PaddleScore& s) {
+    if (s.vetoed) return 0;
+    int n = s.score + 5;  // 偏移到 0-10 范围
+    if (n < 1) n = 1;     // 否决以外的最差 = 1
+    if (n > 10) n = 10;
+    return n;
+}
+
+const char* getConclusionCN(const PaddleScore& s) {
+    if (s.vetoed) return "忌下水";
+    int n = getNormalizedScore(s);
+    if (n <= 3) return "忌下水";
+    if (n <= 6) return "可下水";
+    return "宜下水";
+}
+
 // ============================================================
 // 调试
 // ============================================================

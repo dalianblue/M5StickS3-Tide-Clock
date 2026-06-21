@@ -39,6 +39,12 @@ struct PaddleScore {
 PaddleScore calculatePaddleScore(const LunarInfo& lunar,
                                   int sy, int sm, int sd);
 
+// 归一化评分到 0-10（否决=0，否则 max(1, min(10, score+5))）
+int getNormalizedScore(const PaddleScore& s);
+
+// 中文结论：宜下水 / 可下水 / 忌下水
+const char* getConclusionCN(const PaddleScore& s);
+
 // 等级转中文名（用于调试和将来 UI）
 const char* levelName(ScoreLevel level);
 

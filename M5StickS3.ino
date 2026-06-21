@@ -37,7 +37,7 @@ static void handleButtons() {
     M5.update();
     s_lastBtnPress = millis();
 
-    // ---- BtnA ----
+    // ---- BtnA ----（切屏 + 长按 NTP 重同步）
     if (M5.BtnA.isPressed()) {
         if (s_btnAPressStart == 0) {
             s_btnAPressStart = millis();
@@ -57,28 +57,34 @@ static void handleButtons() {
     }
 
     if (M5.BtnA.wasReleased()) {
-        if (!s_btnALongFired && isTimeValid()) {
-            // 短按：串口打印调试
-            Serial.println("\n>>> BtnA clicked: trigger debug <<<");
-            printTideDebug(getNow());
-            struct tm tinfo;
-            if (getLocalTime(&tinfo)) {
-                LunarInfo li = calcLunar(tinfo.tm_year + 1900,
-                                         tinfo.tm_mon + 1,
-                                         tinfo.tm_mday);
-                printLunarDebug(tinfo.tm_year + 1900,
-                                tinfo.tm_mon + 1,
-                                tinfo.tm_mday);
-                printPaddleScoreDebug(li,
-                                      tinfo.tm_year + 1900,
-                                      tinfo.tm_mon + 1,
-                                      tinfo.tm_mday);
+        if (!s_btnALongFired) {
+            // 短按：切屏
+            s_currentScreen = cycleScreen(s_currentScreen);
+            Serial.printf("[UI] Screen: %d\n", s_currentScreen);
+            renderScreen(s_currentScreen);
+
+            // 屏 3 时同时打印调试
+            if (s_currentScreen == SCREEN_LUNAR && isTimeValid()) {
+                struct tm tinfo;
+                if (getLocalTime(&tinfo)) {
+                    LunarInfo li = calcLunar(tinfo.tm_year + 1900,
+                                             tinfo.tm_mon + 1,
+                                             tinfo.tm_mday);
+                    printTideDebug(getNow());
+                    printLunarDebug(tinfo.tm_year + 1900,
+                                    tinfo.tm_mon + 1,
+                                    tinfo.tm_mday);
+                    printPaddleScoreDebug(li,
+                                          tinfo.tm_year + 1900,
+                                          tinfo.tm_mon + 1,
+                                          tinfo.tm_mday);
+                }
             }
         }
         s_btnAPressStart = 0;
     }
 
-    // ---- BtnB ----
+    // ---- BtnB ----（仅长按调亮度）
     static uint32_t btnBPressStart = 0;
     static bool btnBLongFired = false;
 
@@ -93,12 +99,6 @@ static void handleButtons() {
     }
 
     if (M5.BtnB.wasReleased()) {
-        if (!btnBLongFired) {
-            // 短按：切换屏幕
-            s_currentScreen = cycleScreen(s_currentScreen);
-            Serial.printf("[UI] Screen: %d\n", s_currentScreen);
-            renderScreen(s_currentScreen);
-        }
         btnBPressStart = 0;
     }
 }

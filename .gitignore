@@ -28,4 +28,18 @@ platformio.ini
 
 # Backup files
 *.bak
+*.bak*
 *.orig
+
+# TTF 字体文件（太大，不提交）
+*.ttf
+
+# 字体生成中间文件（可从 cnfont.h 和 rebuild_cnfont.py 重建）
+cnfont_full_*.h
+cnfont-subset*.h
+cnfont-subset*.ttf
+
+# 旧版修复脚本（已被 rebuild_cnfont.py + fix_surgical.py 替代）
+fix_empty_glyphs.py
+fix_from_full.py
+fix_remain_11.py
