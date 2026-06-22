@@ -7,8 +7,6 @@
 #include "config.h"
 #include "time_sync.h"
 #include "tide_predict.h"
-#include "lunar_calc.h"
-#include "paddle_score.h"
 #include "ui_render.h"
 
 // ---------- 状态 ----------
@@ -87,20 +85,7 @@ static void handleButtons() {
 
             // 屏 3 时同时打印调试
             if (s_currentScreen == SCREEN_LUNAR && isTimeValid()) {
-                struct tm tinfo;
-                if (getLocalTime(&tinfo)) {
-                    LunarInfo li = calcLunar(tinfo.tm_year + 1900,
-                                             tinfo.tm_mon + 1,
-                                             tinfo.tm_mday);
-                    printTideDebug(getNow());
-                    printLunarDebug(tinfo.tm_year + 1900,
-                                    tinfo.tm_mon + 1,
-                                    tinfo.tm_mday);
-                    printPaddleScoreDebug(li,
-                                          tinfo.tm_year + 1900,
-                                          tinfo.tm_mon + 1,
-                                          tinfo.tm_mday);
-                }
+                printAllDebug();
             }
         }
         s_btnAPressStart = 0;
@@ -159,20 +144,7 @@ void setup() {
 
     // 时间就绪：打印调试 + 渲染首屏
     if (isTimeValid()) {
-        printTideDebug(getNow());
-        struct tm tinfo;
-        if (getLocalTime(&tinfo)) {
-            LunarInfo li = calcLunar(tinfo.tm_year + 1900,
-                                     tinfo.tm_mon + 1,
-                                     tinfo.tm_mday);
-            printLunarDebug(tinfo.tm_year + 1900,
-                            tinfo.tm_mon + 1,
-                            tinfo.tm_mday);
-            printPaddleScoreDebug(li,
-                                  tinfo.tm_year + 1900,
-                                  tinfo.tm_mon + 1,
-                                  tinfo.tm_mday);
-        }
+        printAllDebug();
     }
 
     s_currentScreen = SCREEN_CLOCK;

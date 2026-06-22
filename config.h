@@ -61,6 +61,10 @@
 #define MAX_YI_ITEMS 5    // 精简版：宜 5 条
 #define MAX_JI_ITEMS 5    // 精简版：忌 5 条
 
+// ponytail: 四离/四绝日期用近 5 年精确数据硬编码（见 paddle_score.cpp）
+// 过此年份后凶日判断可能偏差 1 天，届时需更新硬编码或改用节气公式
+#define SOLAR_TERM_DATA_EXPIRES_YEAR 2029
+
 // ---------- 用户配置（皮划艇打分用） ----------
 // 用户生肖地支索引，首次配网时在 Web 页面下拉选择，存到 NVS
 // 0=子/鼠  1=丑/牛  2=寅/虎  3=卯/兔  4=辰/龙  5=巳/蛇

@@ -1,5 +1,6 @@
 #include "time_sync.h"
 #include "config.h"
+#include "data_tables.h"   // SHENG_XIAO 表（生肖名复用）
 
 #include <WiFi.h>
 #include <WebServer.h>     // ESP32 Arduino Core 自带
@@ -56,14 +57,10 @@ static void clearCredentials() {
 
 // ---------- 用户生肖持久化 ----------
 
-static const char* ZODIAC_NAMES[12] = {
-    "鼠", "牛", "虎", "兔", "龙", "蛇",
-    "马", "羊", "猴", "鸡", "狗", "猪"
-};
-
+// ponytail: ZODIAC_NAMES 与 data_tables.h 的 SHENG_XIAO 内容相同，直接复用
 const char* zodiacName(int idx) {
     if (idx < 0 || idx > 11) return "?";
-    return ZODIAC_NAMES[idx];
+    return SHENG_XIAO[idx];
 }
 
 int getUserZodiac() {
@@ -466,6 +463,10 @@ void updateTimeSync() {
         return;
     }
 
+    // ponytail: ESP32 Wi-Fi 至少需要 80MHz，降频后临时升频保稳定
+    uint32_t prevCpu = getCpuFrequencyMhz();
+    if (prevCpu < 160) setCpuFrequencyMhz(160);
+
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid.c_str(), pass.c_str());
 
@@ -491,6 +492,9 @@ void updateTimeSync() {
     WiFi.mode(WIFI_OFF);
     Serial.println("[Power] Wi-Fi 已关闭");
 #endif
+
+    // 恢复省电频率
+    if (prevCpu < 160) setCpuFrequencyMhz(prevCpu);
 }
 
 SyncState getSyncState() { return s_state; }
@@ -516,6 +520,10 @@ void startConfigPortal() {
     WiFi.disconnect(true, true);
     delay(100);
 
+    // ponytail: AP+DNS+WebServer 负载较高，临时升频
+    uint32_t prevCpu = getCpuFrequencyMhz();
+    if (prevCpu < 160) setCpuFrequencyMhz(160);
+
     bool ok = runConfigPortal(CONFIG_PORTAL_TIMEOUT_MS);
     if (ok) {
         if (syncNTP()) {
@@ -528,6 +536,8 @@ void startConfigPortal() {
         showFailedScreen("WiFi setup failed");
         delay(2000);
     }
+
+    if (prevCpu < 160) setCpuFrequencyMhz(prevCpu);
 }
 
 void forceNTPResync() {

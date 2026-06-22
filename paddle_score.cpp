@@ -122,7 +122,7 @@ PaddleScore calculatePaddleScore(const LunarInfo& lunar,
 
     // -------- 2. 字段权重累加 --------
 
-    struct { const char* name; int weight; bool posOnly; } fields[] = {
+    static const struct { const char* name; int weight; bool posOnly; } fields[] = {
         // 正向：宜 +weight，忌 -weight
         {"出行", 5, false},
         {"开池", 4, false},

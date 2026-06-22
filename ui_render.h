@@ -25,3 +25,6 @@ void uiLoopTick();
 
 // 强制下一次渲染（强制全屏重绘）
 void forceRedraw();
+
+// 串口打印潮汐 + 黄历 + 打分调试（合并三处重复调用）
+void printAllDebug();

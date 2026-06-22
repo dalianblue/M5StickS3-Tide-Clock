@@ -38,10 +38,14 @@ static const bool s_cnFontAvailable = false;
 #endif
 
 // 屏 1 时钟防闪烁缓存
-static String s_lastClockHHMM = "";
 static long s_lastHiMin = -1;  // 缓存到分钟级
 static long s_lastLoMin = -1;
-static float s_lastLevel = -1;
+static int  s_lastDay    = -1;  // 跨日强制重绘
+
+// 潮汐极值缓存：避免每秒重算 3 天搜索
+// ponytail: 事件粒度本就是分钟级，过期才重算，省 ~5000 次 cosf/秒
+static time_t s_cachedNextHi = 0;
+static time_t s_cachedNextLo = 0;
 
 // 黄历缓存（一天计算一次）
 static LunarInfo s_lunar = {0};
@@ -165,8 +169,13 @@ static void renderScreen0_Clock() {
     }
 
     time_t now = getNow();
-    time_t nextHi = getNextHighTide(now);
-    time_t nextLo = getNextLowTide(now);
+
+    // 缓存下次高潮/低潮：now 超过缓存值才重算
+    if (s_cachedNextHi <= now) s_cachedNextHi = getNextHighTide(now);
+    if (s_cachedNextLo <= now) s_cachedNextLo = getNextLowTide(now);
+    time_t nextHi = s_cachedNextHi;
+    time_t nextLo = s_cachedNextLo;
+
     long hiSec = nextHi > 0 ? (long)difftime(nextHi, now) : -1;
     long loSec = nextLo > 0 ? (long)difftime(nextLo, now) : -1;
     long hiMin = hiSec / 60;
@@ -174,13 +183,15 @@ static void renderScreen0_Clock() {
 
     bool flood = isFloodTide(now);
 
-    // 防闪烁：涨落状态或倒计时分钟变化才刷新
+    // 防闪烁：分钟变化、跨日、或强制重绘
     bool needRedraw = s_forceRedraw ||
                       (hiMin != s_lastHiMin) ||
-                      (loMin != s_lastLoMin);
+                      (loMin != s_lastLoMin) ||
+                      (day != s_lastDay);
 
     s_lastHiMin = hiMin;
     s_lastLoMin = loMin;
+    s_lastDay   = day;
 
     if (!needRedraw) {
         s_forceRedraw = false;
@@ -524,4 +535,24 @@ void uiLoopTick() {
 
 void forceRedraw() {
     s_forceRedraw = true;
+    // NTP 重同步 / 切屏后时间可能跳变，缓存失效
+    s_cachedNextHi = 0;
+    s_cachedNextLo = 0;
+}
+
+void printAllDebug() {
+    if (!isTimeValid()) return;
+    printTideDebug(getNow());
+    struct tm tinfo;
+    if (!getLocalTime(&tinfo)) return;
+    LunarInfo li = calcLunar(tinfo.tm_year + 1900,
+                             tinfo.tm_mon + 1,
+                             tinfo.tm_mday);
+    printLunarDebug(tinfo.tm_year + 1900,
+                    tinfo.tm_mon + 1,
+                    tinfo.tm_mday);
+    printPaddleScoreDebug(li,
+                          tinfo.tm_year + 1900,
+                          tinfo.tm_mon + 1,
+                          tinfo.tm_mday);
 }
