@@ -94,6 +94,7 @@ M5StickS3/
 
 - **潮汐调和常数**：来自 [calculate-tides](https://gitee.com/feathercraft/calculate-tides)（桐洲岛实测数据）
 - **农历数据**：经典 1900-2099 农历查表算法
+- **黄历宜忌表**：依《[钦定协纪辨方书](https://zh.wikisource.org/zh-hans/%E6%AC%BD%E5%AE%9A%E5%8D%94%E7%B4%80%E8%BE%A8%E6%96%B9%E6%9B%B8_(%E5%9B%9B%E5%BA%AB%E5%85%A8%E6%9B%B8%E6%9C%AC)/%E5%85%A8%E8%A6%BD2)》卷四·义例二校准 12 值神宜忌
 - **字体**：[霞鹜文楷](https://github.com/lxgw/LxgwWenKai)（开源手写古韵字体）
 - **位置**：杭州富阳桐洲岛（30.01°N, 119.98°E）
 
@@ -226,6 +227,7 @@ M5StickS3/
 
 - **Tide harmonic constants**: [calculate-tides](https://gitee.com/feathercraft/calculate-tides) (Tongzhou Island field data)
 - **Lunar data**: classic 1900-2099 lunar lookup-table algorithm
+- **Almanac Yi/Ji tables**: calibrated against the *Qinding Xieji Bianfang Shu* (Imperial Almanac, Qianlong era), Vol. 4
 - **Font**: [LXGW WenKai](https://github.com/lxgw/LxgwWenKai) (open-source handwritten-style font)
 - **Location**: Tongzhou Island, Fuyang, Hangzhou (30.01°N, 119.98°E)
 

@@ -362,10 +362,10 @@ static void renderScreen1_Tides() {
         dsp.setCursor(34, y);
         dsp.print(timeBuf);
 
-        // 第二行：水位（高潮青色 / 低潮浅灰）
+        // 第二行：水位（高潮青色 / 低潮品红——跟 Lo 标签 ORANGE 拉开层次）
         char levelStr[16];
         snprintf(levelStr, sizeof(levelStr), "%.2fm", events[i].level);
-        dsp.setTextColor(isHigh ? TFT_CYAN : TFT_LIGHTGREY, TFT_BLACK);
+        dsp.setTextColor(isHigh ? TFT_CYAN : TFT_MAGENTA, TFT_BLACK);
         dsp.setCursor(34, y + 16);
         dsp.print(levelStr);
 
